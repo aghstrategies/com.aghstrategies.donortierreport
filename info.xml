@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <extension key="com.aghstrategies.donortierreport" type="module">
   <file>donortierreport</file>
-  <name>DonorTierReport</name>
+  <name>Donor Tier Report</name>
   <description>Report of donors grouped by tier</description>
   <license>AGPL-3.0</license>
   <maintainer>

@@ -17,45 +17,78 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
   protected $_tierTableName = '';
 
   /**
+   * Same as $_from but without the join on the temp table.
+   */
+  protected $_noTierFrom = '';
+
+  /**
    * Mostly borrow from summary report.
    */
   public function __construct() {
     parent::__construct();
-    $this->_columns['donortier']['fields']['tier'] = array(
-      'title' => ts('Tier', array('domain' => 'com.aghstrategies.donortierreport')),
-      'type' => CRM_Utils_Type::T_STRING,
+    $newColumns = array(
+      'donortier' => array(
+        'fields' => array(
+          'tier' => array(
+            'title' => ts('Tier', array('domain' => 'com.aghstrategies.donortierreport')),
+            'type' => CRM_Utils_Type::T_STRING,
+            'default' => TRUE,
+          ),
+        ),
+        'group_bys' => array(
+          'tier' => array(
+            'title' => ts('Tier', array('domain' => 'com.aghstrategies.donortierreport')),
+            'default' => TRUE,
+          ),
+        ),
+      ),
     );
-    $this->_columns['donortier']['group_bys']['tier'] = array(
-      'title' => ts('Tier', array('domain' => 'com.aghstrategies.donortierreport')),
-    );
+    $this->_columns = array_merge($newColumns, $this->_columns);
+
+    // Unset defaults from donor summary.
+
+    $this->_columns['civicrm_contribution']['fields']['receive_date']['default'] = FALSE;
+    $this->_columns['civicrm_contribution']['group_bys']['receive_date']['default'] = FALSE;
+    $this->_columns['civicrm_contribution']['fields']['contribution_status_id']['default'] = FALSE;
+    $this->_columns['civicrm_contribution']['group_bys']['contribution_status_id']['default'] = FALSE;
+    $this->_columns['civicrm_contribution']['fields']['campaign_id']['default'] = FALSE;
+    $this->_columns['civicrm_address']['fields']['country_id']['default'] = FALSE;
+
     $this->_options = array(
       'tier1label' => array(
         'title' => ts('Highest donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => ts('Major donor', array('domain' => 'com.aghstrategies.donortierreport')),
       ),
       'tier1threshold' => array(
         'title' => ts('Lower threshold for highest donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => 5000,
       ),
       'tier2label' => array(
         'title' => ts('Second donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => ts('Mid-level donor', array('domain' => 'com.aghstrategies.donortierreport')),
       ),
       'tier2threshold' => array(
         'title' => ts('Lower threshold for second donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => 1000,
       ),
       'tier3label' => array(
         'title' => ts('Third donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => ts('Small donor', array('domain' => 'com.aghstrategies.donortierreport')),
       ),
       'tier3threshold' => array(
         'title' => ts('Lower threshold for third donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => 100,
       ),
       'tier4label' => array(
         'title' => ts('Lowest donor tier', array('domain' => 'com.aghstrategies.donortierreport')),
         'type' => 'text',
+        'default' => ts('Micro donor', array('domain' => 'com.aghstrategies.donortierreport')),
       ),
     );
   }
@@ -68,6 +101,7 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
       // FIXME: For now lets build all elements as checkboxes.
       // Once we clear with the format we can build elements based on type
 
+      $defaults = array();
       foreach ($this->_options as $fieldName => $field) {
         $options = array();
 
@@ -90,7 +124,11 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
 
           default:
         }
+        if (CRM_Utils_Array::value('default', $field)) {
+          $defaults[$fieldName] = $field['default'];
+        }
       }
+      $this->setDefaults($defaults);
     }
     if (!empty($this->_options)) {
       $this->tabs['ReportOptions'] = array(
@@ -110,8 +148,6 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
   public function buildQuery($applyLimit = TRUE) {
     $randomNum = md5(uniqid());
     $this->_tierTableName = "civicrm_temp_donortier_{$randomNum}";
-    $sql = "CREATE  TABLE {$this->_tierTableName} ( contact_id int, total_amount_sum decimal(20,2), tier int ) ENGINE=HEAP";
-    CRM_Core_DAO::executeQuery($sql);
 
     $sql = parent::buildQuery($applyLimit);
 
@@ -124,11 +160,11 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
     $tierselect1 = $filteredOptions['tier1threshold'] ? "IF(SUM({$this->_aliases['civicrm_contribution']}.total_amount) >= {$filteredOptions['tier1threshold']}, 1, $tierselect2)" : 1;
 
     // Populate the temp table.
-    $tempSql = "INSERT INTO {$this->_tierTableName}
+    $tempSql = "CREATE TEMPORARY TABLE {$this->_tierTableName} ( INDEX(contact_id) ) ENGINE=HEAP AS (
       SELECT {$this->_aliases['civicrm_contact']}.id as contact_id, SUM({$this->_aliases['civicrm_contribution']}.total_amount) as total_amount_sum, $tierselect1 as tier
-      {$this->_from} {$this->_where}
+      {$this->_noTierFrom} {$this->_where}
       GROUP BY contact_id
-      {$this->_having}";
+      {$this->_having} )";
     CRM_Core_DAO::executeQuery($tempSql);
 
     return $sql;
@@ -147,6 +183,8 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
    */
   public function from($entity = NULL) {
     parent::from($entity);
+
+    $this->_noTierFrom = $this->_from;
 
     $this->_from .= "LEFT JOIN {$this->_tierTableName} {$this->_aliases['donortier']}
         ON {$this->_aliases['donortier']}.contact_id = {$this->_aliases['civicrm_contact']}.id\n";
