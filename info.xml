@@ -9,18 +9,18 @@
     <email>info@aghstrategies.com</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
-    <url desc="Documentation">http://FIXME</url>
-    <url desc="Support">http://FIXME</url>
+    <url desc="Main Extension Page">https://civicrm.org/extensions/donor-tier-report</url>
+    <url desc="Documentation">https://aghstrategies.com/donortierreport</url>
+    <url desc="Support">https://aghstrategies.com/contact</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
-  <releaseDate>2015-08-07</releaseDate>
+  <releaseDate>2015-10-16</releaseDate>
   <version>1.0</version>
-  <develStage>alpha</develStage>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>4.6</ver>
+    <ver>4.7</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
   <civix>
     <namespace>CRM/Donortierreport</namespace>
   </civix>
