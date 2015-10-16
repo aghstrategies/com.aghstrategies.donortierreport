@@ -196,7 +196,8 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
       || !empty($this->_params['group_bys']['not_new'])) {
       $this->_isNewField = TRUE;
     }
-    if (!empty($this->_params['fields']['tier']) || !empty($this->_params['filters']['tier']) || !empty($this->_params['group_bys']['tier'])) {
+
+    if (!empty($this->_params['fields']['tier']) || !empty($this->_params['tier_value']) || !empty($this->_params['group_bys']['tier'])) {
       $this->_tierField = TRUE;
     }
 
