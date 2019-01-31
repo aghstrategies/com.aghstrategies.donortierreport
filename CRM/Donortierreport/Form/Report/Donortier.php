@@ -129,6 +129,11 @@ class CRM_Donortierreport_Form_Report_Donortier extends CRM_Report_Form_Contribu
     );
     $this->_columns = array_merge($newColumns, $this->_columns);
 
+    // AGH #15088 If core Contribution Summary Report does not include a contact type filter add one
+    if (empty($this->_columns['civicrm_contact']['filters'])) {
+      $this->_columns['civicrm_contact']['filters'] = array('contact_type' => array('title' => ts('Contact Type')));
+    }
+
     // Unset defaults from donor summary:
     $this->_columns['civicrm_contribution']['fields']['receive_date']['default'] = FALSE;
     $this->_columns['civicrm_contribution']['group_bys']['receive_date']['default'] = FALSE;
